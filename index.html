@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LifeBridge AI - Emergency Response & Disaster Assistant</title>
+  <meta name="description" content="LifeBridge AI helps citizens find shelters, safe routes, medical aid, and emergency checklist guidance offline-first during floods, earthquakes, and cyclones.">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <!-- Local Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Screen Flash Overlay for SOS Strobe Simulator -->
+  <div id="flashlightOverlay" class="flashlight-overlay"></div>
+
+  <div class="app-container">
+    
+    <!-- Application Header -->
+    <header class="app-header">
+      <div class="logo-group">
+        <div class="logo-icon">
+          <i class="fa-solid fa-bridge"></i>
+        </div>
+        <div class="logo-text">
+          <h1 id="txt-app-title">LifeBridge AI</h1>
+          <div class="logo-tagline" id="txt-app-tagline">Disaster & Emergency Assistant</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-lang" id="btnLangToggle" onclick="toggleLanguage()">हिन्दी</button>
+      </div>
+    </header>
+
+    <!-- Emergency Alert Banner -->
+    <div id="alertBanner" class="alert-banner alert-success">
+      <div class="alert-content">
+        <span class="alert-indicator"></span>
+        <span id="alertText">All Clear - System online. Normal local operations.</span>
+      </div>
+    </div>
+
+    <!-- Main Workspace Grid -->
+    <main class="main-grid">
+      
+      <!-- Left Column: Map and Interactive Information Tables -->
+      <section class="panel-left">
+        
+        <!-- Interactive Map -->
+        <div class="map-wrapper">
+          <div id="map"></div>
+        </div>
+
+        <!-- Filter tabs for data categories -->
+        <nav class="filter-tabs">
+          <button class="tab-btn active" data-tab="shelters" onclick="switchTab('shelters')">
+            <i class="fa-solid fa-tents"></i> <span id="tab-shelters">Shelters</span>
+          </button>
+          <button class="tab-btn" data-tab="medical" onclick="switchTab('medical')">
+            <i class="fa-solid fa-house-medical"></i> <span id="tab-medical">Medical Help</span>
+          </button>
+          <button class="tab-btn" data-tab="supplies" onclick="switchTab('supplies')">
+            <i class="fa-solid fa-backpack"></i> <span id="tab-supplies">Supplies</span>
+          </button>
+          <button class="tab-btn" data-tab="tips" onclick="switchTab('tips')">
+            <i class="fa-solid fa-shield-halved"></i> <span id="tab-tips">Safety Rules</span>
+          </button>
+        </nav>
+
+        <!-- Information Render Panels -->
+        <div class="card-module">
+          <!-- Shelters List -->
+          <div id="sheltersPanel" class="tab-content">
+            <div class="card-title-bar">
+              <h2><i class="fa-solid fa-tents"></i> <span id="title-shelters">Emergency Shelters</span></h2>
+              <span class="logo-tagline" id="txt-shelters-desc">Click card to plot route on map</span>
+            </div>
+            <div id="sheltersList" class="list-container">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Medical Help List -->
+          <div id="medicalPanel" class="tab-content" style="display: none;">
+            <div class="card-title-bar">
+              <h2><i class="fa-solid fa-square-h"></i> <span id="title-medical">Hospitals & Trauma Centers</span></h2>
+              <span class="logo-tagline" id="txt-medical-desc">Active bed count and emergency wait times</span>
+            </div>
+            <div id="medicalList" class="list-container">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Emergency Supply Tracker -->
+          <div id="suppliesPanel" class="tab-content" style="display: none;">
+            <div class="card-title-bar">
+              <h2><i class="fa-solid fa-circle-check"></i> <span id="title-supplies">Offline Supply Checklist</span></h2>
+              <span class="logo-tagline" id="txt-supplies-desc">Maintained locally on device for offline tracking</span>
+            </div>
+            <div id="checklistContainer" class="checklist-container">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Safety Protocols -->
+          <div id="tipsPanel" class="tab-content" style="display: none;">
+            <div class="card-title-bar">
+              <h2><i class="fa-solid fa-book-medical"></i> <span id="title-tips">Emergency Safety Guides</span></h2>
+              <span class="logo-tagline" id="txt-tips-desc">Actionable safety rules for current threat</span>
+            </div>
+            <div id="tipsContainer" class="list-container">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Column: Safety Widgets & Gemini Agent Console -->
+      <section class="panel-left">
+        
+        <!-- Emergency SOS Button -->
+        <div class="card-module">
+          <div class="card-title-bar">
+            <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-red)"></i> <span id="title-sos">Emergency SOS Beacon</span></h2>
+          </div>
+          <div class="sos-button-wrapper" id="sosContainer">
+            <div class="sos-pulse-ring" id="sosRing" style="display: none;"></div>
+            <button class="sos-trigger-btn" id="btnSOS" onclick="triggerSOS()">
+              <i class="fa-solid fa-kit-medical"></i>
+              <span>SOS</span>
+            </button>
+            <div class="sos-coords" id="sosCoords">Lat: --.----, Lng: --.----</div>
+            <p class="sos-instructions" id="txt-sos-inst">Tap SOS to simulate flashlight strobe and generate distress location message.</p>
+          </div>
+        </div>
+
+        <!-- Family Safety Check-In -->
+        <div class="card-module">
+          <div class="card-title-bar">
+            <h2><i class="fa-solid fa-people-roof" style="color: var(--accent-green)"></i> <span id="title-checkin">Safety Status Broadcast</span></h2>
+          </div>
+          <div class="check-in-form">
+            <div class="form-group">
+              <label for="checkinName" id="lbl-checkin-name">Your Name</label>
+              <input type="text" id="checkinName" class="form-input" placeholder="Enter full name" value="Suhani">
+            </div>
+            <div class="form-group">
+              <label id="lbl-checkin-status">Current Status</label>
+              <div class="status-select-grid">
+                <button class="status-opt-btn active" data-status="safe" onclick="setCheckinStatus('safe')">
+                  <i class="fa-solid fa-circle-check"></i> <span id="opt-safe">I am Safe</span>
+                </button>
+                <button class="status-opt-btn" data-status="danger" onclick="setCheckinStatus('danger')">
+                  <i class="fa-solid fa-circle-exclamation"></i> <span id="opt-danger">Need Help</span>
+                </button>
+              </div>
+            </div>
+            <button class="btn-primary" onclick="generateBroadcastMessage()" id="btn-generate-broadcast">Generate Safety Message</button>
+            
+            <div class="share-output-box" id="shareBox" style="display: none;">
+              <div class="share-header">
+                <span id="txt-share-ready">Message ready to copy:</span>
+                <button class="btn-copy" onclick="copySafetyBroadcast()"><i class="fa-solid fa-copy"></i> <span id="btn-copy-txt">Copy</span></button>
+              </div>
+              <div class="share-text" id="shareText"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Disaster Simulation Console -->
+        <div class="card-module">
+          <div class="card-title-bar">
+            <h2><i class="fa-solid fa-sliders" style="color: var(--accent-orange)"></i> <span id="title-simulation">Disaster Simulation Console</span></h2>
+          </div>
+          <div class="simulation-grid">
+            <button class="sim-btn active" data-sim="NORMAL" onclick="changeScenario('NORMAL')">Normal</button>
+            <button class="sim-btn" data-sim="FLOOD" onclick="changeScenario('FLOOD')">Flood</button>
+            <button class="sim-btn" data-sim="EARTHQUAKE" onclick="changeScenario('EARTHQUAKE')">Earthquake</button>
+            <button class="sim-btn" data-sim="CYCLONE" onclick="changeScenario('CYCLONE')">Cyclone</button>
+          </div>
+        </div>
+
+        <!-- Gemini AI Emergency Copilot Agent -->
+        <div class="copilot-panel">
+          <div class="copilot-header">
+            <div class="copilot-avatar">
+              <i class="fa-solid fa-wand-magic-sparkles" style="color: #c084fc;"></i>
+            </div>
+            <div class="copilot-header-info">
+              <h3>Gemini Agent Copilot</h3>
+              <div class="copilot-status">
+                <span class="copilot-status-dot"></span>
+                <span id="txt-copilot-status">Active Emergency Responder</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Chat Feed -->
+          <div class="copilot-feed" id="chatFeed">
+          <div class="chat-bubble ai" id="agentGreeting">
+              <strong>✦ Gemini Emergency Agent Online</strong><br><br>
+              I am your <strong>AI Emergency Copilot</strong> — connected to shelter, route, medical, supply, and first-aid modules in real-time.<br><br>
+              Current scenario: <strong id="greetingScenario">NORMAL</strong>. Ask me anything about the emergency or choose a quick action below.
+            </div>
+          </div>
+
+          <!-- Suggested chips -->
+          <div class="suggested-chips-wrapper" id="suggestedChips">
+            <button class="chip-btn" onclick="submitSuggestedQuery('Find nearest shelter')">🏠 Nearest Shelter</button>
+            <button class="chip-btn" onclick="submitSuggestedQuery('Plot safe route to hospital')">🗺️ Safe Route</button>
+            <button class="chip-btn" onclick="submitSuggestedQuery('Show medical help near me')">🏥 Medical Help</button>
+            <button class="chip-btn" onclick="submitSuggestedQuery('What supplies do I need?')">🎒 Supplies</button>
+            <button class="chip-btn" onclick="submitSuggestedQuery('Give me a situation report')">📊 Situation Report</button>
+            <button class="chip-btn" onclick="submitSuggestedQuery('First aid for severe bleeding')">🩸 Bleeding First Aid</button>
+            <button class="chip-btn" onclick="submitSuggestedQuery('What are the active hazard zones?')">⚠️ Hazard Info</button>
+            <button class="chip-btn" onclick="submitSuggestedQuery('Help me contact my family')">👨‍👩‍👧 Family Check-In</button>
+            <button class="chip-btn" onclick="submitSuggestedQuery('Trigger SOS emergency')">🚨 SOS Beacon</button>
+          </div>
+
+          <!-- Input bar -->
+          <div class="copilot-input-bar">
+            <input type="text" id="chatInput" class="copilot-input" placeholder="Ask Gemini..." onkeypress="handleChatKeypress(event)">
+            <button class="btn-send" onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+          </div>
+        </div>
+
+      </section>
+      
+    </main>
+  </div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Load Local JS Dependencies -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+  
+  <!-- Register Offline Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('Service Worker registered successfully:', reg.scope))
+          .catch(err => console.log('Service Worker registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>
